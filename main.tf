@@ -61,12 +61,14 @@ resource "aws_instance" "k8s" {
   }
 
   # cloud-init (first boot only): upgrade packages, then prepare the node for kubeadm
-  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl)
+  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/repo/scripts)
   user_data = <<-EOF
     #cloud-config
     package_update: true
     package_upgrade: true
     package_reboot_if_required: true
+    packages:
+      - containerd
 
     write_files:
       - path: /etc/modules-load.d/k8s.conf
@@ -78,26 +80,20 @@ resource "aws_instance" "k8s" {
           net.bridge.bridge-nf-call-ip6tables=1
           net.bridge.bridge-nf-call-iptables=1
           net.ipv4.ip_forward=1
+      # deferred: written after the package upgrade, so apt doesn't see the repo before its key exists
+      - path: /etc/apt/sources.list.d/kubernetes.list
+        defer: true
+        content: |
+          deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${var.k8s_minor_version}/deb/ /
 
     runcmd:
-      - swapoff -a
-      - sed -i '/ swap / s/^/#/' /etc/fstab
-      - modprobe overlay
-      - modprobe br_netfilter
-      - sysctl --system
-      - DEBIAN_FRONTEND=noninteractive apt-get install -y containerd apt-transport-https ca-certificates curl gpg
-      - mkdir -p /etc/containerd
-      - containerd config default > /etc/containerd/config.toml
-      - sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-      - systemctl restart containerd
-      - systemctl enable containerd
-      - mkdir -p -m 755 /etc/apt/keyrings
+      - swapoff -a && sed -i '/ swap / s/^/#/' /etc/fstab
+      - modprobe -a overlay br_netfilter && sysctl --system
+      - mkdir -p /etc/containerd && containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' > /etc/containerd/config.toml && systemctl restart containerd
       - curl -fsSL https://pkgs.k8s.io/core:/stable:/${var.k8s_minor_version}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-      - echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${var.k8s_minor_version}/deb/ /" > /etc/apt/sources.list.d/kubernetes.list
-      - apt-get update
-      - DEBIAN_FRONTEND=noninteractive apt-get install -y kubelet kubeadm kubectl
-      - apt-mark hold kubelet kubeadm kubectl
-      - systemctl enable --now kubelet
+      - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y kubelet kubeadm kubectl && apt-mark hold kubelet kubeadm kubectl
+      - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && helm version
+      - git clone --depth 1 --filter=blob:none --sparse ${var.scripts_repo_url} /home/ubuntu/repo && git -C /home/ubuntu/repo sparse-checkout set scripts && chown -R ubuntu:ubuntu /home/ubuntu/repo
   EOF
 
   tags = {
