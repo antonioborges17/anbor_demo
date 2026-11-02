@@ -44,7 +44,7 @@ module "security" {
 ############################
 
 resource "aws_instance" "k8s" {
-  for_each = toset(var.instance_names)
+  for_each = var.instances
 
   ami                    = data.aws_ssm_parameter.ubuntu_ami.value
   instance_type          = var.instance_type
@@ -64,6 +64,8 @@ resource "aws_instance" "k8s" {
   # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/repo/scripts)
   user_data = <<-EOF
     #cloud-config
+    hostname: ${each.value}
+    manage_etc_hosts: true
     package_update: true
     package_upgrade: true
     package_reboot_if_required: true
@@ -97,7 +99,7 @@ resource "aws_instance" "k8s" {
   EOF
 
   tags = {
-    Name = each.value
+    Name = each.key
   }
 }
 

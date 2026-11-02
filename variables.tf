@@ -26,10 +26,14 @@ variable "root_volume_size" {
   default     = 30
 }
 
-variable "instance_names" {
-  description = "Names of the instances to create"
-  type        = list(string)
-  default     = ["k8s-ctrl", "k8s-worker1", "k8s-worker2"]
+variable "instances" {
+  description = "Instances to create: Name tag => hostname set on the node at first boot"
+  type        = map(string)
+  default = {
+    "k8s-ctrl"    = "control-plane"
+    "k8s-worker1" = "worker1"
+    "k8s-worker2" = "worker2"
+  }
 }
 
 variable "k8s_minor_version" {
