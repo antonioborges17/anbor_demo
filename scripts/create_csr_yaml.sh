@@ -1,3 +1,7 @@
+#!/bin/bash
+set -euo pipefail
+
+cat <<EOF > web-admin-csr.yaml
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
@@ -8,3 +12,4 @@ spec:
   expirationSeconds: 86400
   usages:
   - client auth
+EOF
