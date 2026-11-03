@@ -43,7 +43,7 @@ variable "k8s_minor_version" {
 }
 
 variable "scripts_repo_url" {
-  description = "Public Git repo whose scripts/ folder is sparse-cloned to /home/ubuntu/repo on each node"
+  description = "Public Git repo whose scripts/ folder is downloaded to /home/ubuntu/scripts on each node"
   type        = string
   default     = "https://github.com/antonioborges17/anbor_demo"
 }

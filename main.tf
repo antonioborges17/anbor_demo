@@ -61,7 +61,7 @@ resource "aws_instance" "k8s" {
   }
 
   # cloud-init (first boot only): upgrade packages, then prepare the node for kubeadm
-  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/repo/scripts)
+  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/scripts)
   user_data = <<-EOF
     #cloud-config
     hostname: ${each.value}
@@ -95,7 +95,7 @@ resource "aws_instance" "k8s" {
       - curl -fsSL https://pkgs.k8s.io/core:/stable:/${var.k8s_minor_version}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y kubelet kubeadm kubectl && apt-mark hold kubelet kubeadm kubectl
       - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && helm version
-      - git clone --depth 1 --filter=blob:none --sparse ${var.scripts_repo_url} /home/ubuntu/repo && git -C /home/ubuntu/repo sparse-checkout set scripts && chown -R ubuntu:ubuntu /home/ubuntu/repo
+      - git clone --depth 1 --filter=blob:none --sparse ${var.scripts_repo_url} /tmp/repo && git -C /tmp/repo sparse-checkout set --no-cone /scripts/ && cp -r /tmp/repo/scripts /home/ubuntu/scripts && rm -rf /tmp/repo && chown -R ubuntu:ubuntu /home/ubuntu/scripts
   EOF
 
   tags = {
