@@ -46,8 +46,11 @@ kubectl config use-context web-admin-context
 sleep 60
 kubectl apply -n web-portal -f ingress-tls-cert.yaml
 
-### 7) Verify the certificate (as cluster admin)
+# Verify the certificate (as cluster admin)
 kubectl config use-context kubernetes-admin@kubernetes
 kubectl get certificate -n web-portal                    # READY should become True
 kubectl describe certificate nginx-tls -n web-portal     # if it stays False
 kubectl get ingress -n web-portal
+
+# Switch back to web-admin context
+kubectl config use-context web-admin-context
