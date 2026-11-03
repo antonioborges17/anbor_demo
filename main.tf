@@ -43,6 +43,18 @@ module "security" {
 # EC2 instances
 ############################
 
+# Linux user on the control plane for the web portal: SSH key login only
+# (no password, no sudo). Its kubeconfig is installed by scripts/config_rbac_usercert.sh.
+locals {
+  web_admin_user = {
+    name                = "web-admin"
+    gecos               = "Web portal admin"
+    shell               = "/bin/bash"
+    lock_passwd         = true
+    ssh_authorized_keys = [trimspace(file(pathexpand(var.web_admin_public_key_path)))]
+  }
+}
+
 resource "aws_instance" "k8s" {
   for_each = var.instances
 
@@ -69,6 +81,8 @@ resource "aws_instance" "k8s" {
     package_update: true
     package_upgrade: true
     package_reboot_if_required: true
+    # "default" keeps the ubuntu user and the EC2 key pair; the control plane also gets web-admin
+    users: ${each.key == "k8s-ctrl" ? jsonencode(["default", local.web_admin_user]) : jsonencode(["default"])}
     packages:
       - containerd
 

@@ -48,6 +48,18 @@ kubectl config set-context web-admin-context \
   --user=web-admin \
   --namespace=web-portal
 
+# Give the web-admin Linux user (created by cloud-init on the control plane) its own
+# kubeconfig holding only the web-admin context, never the cluster-admin credentials
+if id web-admin &>/dev/null; then
+  tmp_kubeconfig=$(mktemp)
+  kubectl config view --minify --flatten --context=web-admin-context > "$tmp_kubeconfig"
+  sudo install -d -m 700 -o web-admin -g web-admin /home/web-admin/.kube
+  sudo install -m 600 -o web-admin -g web-admin "$tmp_kubeconfig" /home/web-admin/.kube/config
+  rm -f "$tmp_kubeconfig"
+else
+  echo "WARNING: Linux user web-admin not found; skipping its kubeconfig" >&2
+fi
+
 # Verify permissions (still as cluster admin, since --as requires impersonation rights)
 kubectl auth can-i create deployments -n web-portal --as web-admin   # expected: yes
 if kubectl auth can-i get nodes --as web-admin; then                 # expected: no

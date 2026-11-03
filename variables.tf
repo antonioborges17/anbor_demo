@@ -36,6 +36,12 @@ variable "instances" {
   }
 }
 
+variable "web_admin_public_key_path" {
+  description = "Path to the SSH public key for the web-admin Linux user on the control plane (create it with: ssh-keygen -t ed25519 -f ~/.ssh/web-admin)"
+  type        = string
+  default     = "~/.ssh/web-admin.pub"
+}
+
 variable "k8s_minor_version" {
   description = "Kubernetes minor version for the pkgs.k8s.io apt repo (e.g. v1.35)"
   type        = string
