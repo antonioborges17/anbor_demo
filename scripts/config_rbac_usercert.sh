@@ -6,11 +6,22 @@ set -euo pipefail
 openssl genrsa -out web-admin.key 2048
 openssl req -new -key web-admin.key -out web-admin.csr -subj "/CN=web-admin/O=web-team"
 
-### 2) Submit the CSR to the cluster
+cat <<EOF > web-admin-csr.yaml
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: web-admin
+spec:
+  request: $(base64 -w0 < web-admin.csr)
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400
+  usages:
+  - client auth
+EOF
 
+### 2) Submit the CSR to the cluster
 kubectl apply -f web-admin-csr.yaml
 
-# Note: the certificate is valid for 24 hours. After that, repeat this section to issue a new one.
 ### 3) Approve the CSR and extract the certificate
 
 kubectl get csr
@@ -23,7 +34,7 @@ kubectl create namespace web-portal
 
 kubectl create role web-deployer -n web-portal \
   --verb=get,list,watch,create,update,patch,delete \
-  --resource=deployments.apps,replicasets.apps,pods,pods/log,services
+  --resource=deployments.apps,replicasets.apps,pods,pods/log,services,configmaps
 
 ### 5) Bind the Role to the user
 

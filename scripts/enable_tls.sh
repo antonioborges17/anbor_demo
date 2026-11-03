@@ -30,6 +30,9 @@ kubectl get pods,svc -n ingress-nginx
 kubectl apply -f self-signed-ca.yaml
 kubectl get clusterissuer      # both should show READY True
 
+# Wait for the cluster issuers to become ready
+kubectl wait --for=condition=Ready clusterissuer --all --timeout=180s
+
 # Grant web-admin the right to manage Ingresses in its own namespace (admin)
 kubectl create role ingress-manager -n web-portal \
   --verb=get,list,watch,create,update,patch,delete \
@@ -37,7 +40,6 @@ kubectl create role ingress-manager -n web-portal \
 
 kubectl create rolebinding web-portal-ingress -n web-portal \
   --role=ingress-manager --user=web-admin
-
 
 # Generate Ingress with a TLS certificate (as web-admin)
 kubectl config use-context web-admin-context

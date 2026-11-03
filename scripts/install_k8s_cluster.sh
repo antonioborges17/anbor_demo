@@ -17,3 +17,13 @@ sudo $JOIN_CMD
 JOIN
 
 chmod +x "$SCRIPT_DIR/join-worker.sh"
+
+# Configure kubectl
+mkdir -p "$HOME/.kube"
+sudo cp /etc/kubernetes/admin.conf "$HOME/.kube/config"
+sudo chown "$(id -u):$(id -g)" "$HOME/.kube/config"
+
+# Install a CNI plugin (Calico) for pod networking
+# Override with: CALICO_VERSION=vX.Y.Z ./install_cni.sh
+CALICO_VERSION="${CALICO_VERSION:-v3.33.0}"
+kubectl apply -f "https://raw.githubusercontent.com/projectcalico/calico/${CALICO_VERSION}/manifests/calico.yaml"
