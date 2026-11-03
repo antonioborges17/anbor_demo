@@ -43,6 +43,7 @@ kubectl create rolebinding web-portal-ingress -n web-portal \
 
 # Generate Ingress with a TLS certificate (as web-admin)
 kubectl config use-context web-admin-context
+sleep 60
 kubectl apply -n web-portal -f ingress-tls-cert.yaml
 
 ### 7) Verify the certificate (as cluster admin)
