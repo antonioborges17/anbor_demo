@@ -21,12 +21,12 @@ for script in "${SCRIPTS[@]}"; do
 
   if [[ "$script" == "install_k8s_cluster.sh" ]]; then
     echo
-    echo "==> ACTION REQUIRED: run join_worker.sh on every worker node now."
+    echo "==> ACTION REQUIRED: run join-worker.sh on every worker node now."
     while true; do
-      read -r -p "Has join_worker.sh been run on all worker nodes? [y/n] " answer </dev/tty
+      read -r -p "Has join-worker.sh been run on all worker nodes? [y/n] " answer </dev/tty
       case "$answer" in
         [Yy]*) break ;;
-        [Nn]*) echo "Run join_worker.sh on each worker node, then answer 'y' to continue." ;;
+        [Nn]*) echo "Run join-worker.sh on each worker node, then answer 'y' to continue." ;;
         *) echo "Please answer y or n." ;;
       esac
     done

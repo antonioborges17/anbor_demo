@@ -50,4 +50,7 @@ kubectl config set-context web-admin-context \
 
 # Verify permissions (still as cluster admin, since --as requires impersonation rights)
 kubectl auth can-i create deployments -n web-portal --as web-admin   # expected: yes
-kubectl auth can-i get nodes --as web-admin                          # expected: no
+if kubectl auth can-i get nodes --as web-admin; then                 # expected: no
+  echo "ERROR: web-admin should not be able to get nodes" >&2
+  exit 1
+fi
