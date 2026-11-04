@@ -31,7 +31,7 @@ kubectl create namespace web-portal
 
 kubectl create role web-deployer -n web-portal \
   --verb=get,list,watch,create,update,patch,delete \
-  --resource=deployments.apps,replicasets.apps,pods,pods/log,services,configmaps
+  --resource=deployments.apps,deployments.apps/scale,replicasets.apps,pods,pods/log,services,configmaps
 
 # Bind the Role to the user
 kubectl create rolebinding web-portal-deployer -n web-portal \
