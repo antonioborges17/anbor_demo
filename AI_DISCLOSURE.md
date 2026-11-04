@@ -16,6 +16,16 @@ Files added or changed to deploy Teleport (Helm chart `teleport-cluster`) with a
 | `variables.tf`                 |       100%     | Updated: `instance_type` default `t3a.small` → `t3a.medium` (rest of file unchanged) |
 | `AI_DISCLOSURE.md`             |       100%     | Added: this file                            |
 
+## Design and Deployment Guide
+
+Files added or changed while writing the guide. AI tool: Claude Code.
+
+| File                                     | AI Involvement | Change                                      |
+|------------------------------------------|----------------|---------------------------------------------|
+| `docs/Design_and_Deployment_Guide.docx`  |       100%     | Added: text and architecture figure, adapted from the guide in `anbor_demo_cd` (also AI-generated). Pending author review. |
+| `scripts/enable_tls.sh`                  |       100%     | Updated: waits for the `nginx-tls` Certificate to exist and become Ready (rest of file listed under Other Files) |
+| `AI_DISCLOSURE.md`                       |       100%     | Updated: added this section                 |
+
 ## Initial Terraform Configuration
 
 Files added in commit `8e29ce5`, which carries a `Co-Authored-By: Claude` trailer. `main.tf` and `variables.tf` were changed by later commits.

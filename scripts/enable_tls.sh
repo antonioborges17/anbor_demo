@@ -48,8 +48,13 @@ kubectl apply -n web-portal -f ingress-tls-cert.yaml
 
 # Verify the certificate (as cluster admin)
 kubectl config use-context kubernetes-admin@kubernetes
-kubectl get certificate -n web-portal                    # READY should become True
-kubectl describe certificate nginx-tls -n web-portal     # if it stays False
+# cert-manager creates the Certificate shortly after the Ingress, so wait for it to exist first
+kubectl wait --for=create certificate/nginx-tls -n web-portal --timeout=120s
+kubectl wait --for=condition=Ready certificate/nginx-tls -n web-portal --timeout=180s || {
+  kubectl describe certificate nginx-tls -n web-portal
+  exit 1
+}
+kubectl get certificate -n web-portal
 kubectl get ingress -n web-portal
 
 # Switch back to web-admin context
