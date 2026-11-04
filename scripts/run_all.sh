@@ -13,6 +13,7 @@ SCRIPTS=(
   config_rbac_usercert.sh
   deploy_web-portal.sh
   enable_tls.sh
+  deploy_teleport.sh
 )
 
 for script in "${SCRIPTS[@]}"; do

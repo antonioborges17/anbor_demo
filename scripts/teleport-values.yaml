@@ -1,0 +1,63 @@
+# Values for the teleport-cluster Helm chart, installed by deploy_teleport.sh.
+
+# Cluster name is baked into Teleport's CA. Do not change it after the first deploy.
+clusterName: teleport.aborgesdev.test
+# Address clients use: ingress-nginx is reached on NodePort 30443
+publicAddr:
+  - teleport.aborgesdev.test:30443
+# Required by the chart when the proxy sits behind an ingress
+proxyListenerMode: multiplex
+
+# Auth state (users, roles, audit log) on a PVC from local-path-provisioner.
+# The volume lives on one node's disk, so the auth pod stays pinned to that node.
+persistence:
+  enabled: true
+  storageClassName: local-path
+  volumeSize: 5Gi
+
+# Proxy cert from the lab CA (Certificate -> Secret teleport-tls, used by proxy and ingress)
+highAvailability:
+  certManager:
+    enabled: true
+    addPublicAddrs: true
+    issuerName: lab-ca-issuer
+    issuerKind: ClusterIssuer
+
+# The proxy verifies its own cert chain at startup, so it must trust the lab CA.
+# cert-manager's CA issuer writes that CA to ca.crt in the teleport-tls Secret.
+# The key name is read from the top-level tls block; the Secret name is set for the
+# proxy only because it replaces public CAs in the pod's trust store (auth keeps them).
+tls:
+  existingCASecretKeyName: ca.crt
+proxy:
+  tls:
+    # Named after the Helm release, which must be "teleport"
+    existingCASecretName: teleport-tls
+  # The config-test Job requires the CA Secret but runs as a pre-install hook, before the
+  # Certificate exists, so it would block a fresh install.
+  validateConfigOnDeploy: false
+
+# Expose the proxy through ingress-nginx instead of a LoadBalancer
+service:
+  type: ClusterIP
+ingress:
+  enabled: true
+  # Single host in the hosts file; wildcard (*.teleport...) app subdomains not used
+  suppressAutomaticWildcards: true
+  spec:
+    ingressClassName: nginx
+annotations:
+  ingress:
+    # Teleport proxy only speaks TLS
+    nginx.ingress.kubernetes.io/backend-protocol: HTTPS
+    # Long-lived websocket sessions (web terminal, tsh ALPN upgrade)
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+# Nodes are t3a.medium (4 GiB): keep requests modest (applies to auth and proxy)
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi
