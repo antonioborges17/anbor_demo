@@ -17,7 +17,7 @@ variable "key_name" {
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3a.medium"
+  default     = "t3a.small"
 }
 
 variable "root_volume_size" {

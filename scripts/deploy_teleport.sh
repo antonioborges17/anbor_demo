@@ -25,8 +25,13 @@ kubectl -n local-path-storage rollout status deployment/local-path-provisioner -
 helm repo add teleport https://charts.releases.teleport.dev
 helm repo update
 
+# Create the namespace up front so Pod Security Admission applies from the first pod
+# (helm's --create-namespace can't set labels). Written to tolerate re-runs.
+kubectl create namespace teleport --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace teleport --overwrite pod-security.kubernetes.io/enforce=baseline
+
 helm upgrade --install teleport teleport/teleport-cluster \
-  -n teleport --create-namespace \
+  -n teleport \
   --version "$TELEPORT_CHART_VERSION" \
   -f teleport-values.yaml \
   --wait --timeout 10m

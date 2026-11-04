@@ -26,16 +26,20 @@ kubectl get csr
 kubectl certificate approve web-admin
 kubectl get csr web-admin -o jsonpath='{.status.certificate}' | base64 -d > web-admin.crt
 
-# Create the namespace and a least-privilege Role
-kubectl create namespace web-portal
+# Create the namespace (enforcing the Pod Security baseline) and a least-privilege Role.
+# Each is piped through apply to tolerate re-runs.
+kubectl create namespace web-portal --dry-run=client -o yaml | kubectl apply -f -
+kubectl label namespace web-portal --overwrite pod-security.kubernetes.io/enforce=baseline
 
 kubectl create role web-deployer -n web-portal \
   --verb=get,list,watch,create,update,patch,delete \
-  --resource=deployments.apps,deployments.apps/scale,replicasets.apps,pods,pods/log,services,configmaps
+  --resource=deployments.apps,deployments.apps/scale,replicasets.apps,pods,pods/log,services,configmaps \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # Bind the Role to the user
 kubectl create rolebinding web-portal-deployer -n web-portal \
-  --role=web-deployer --user=web-admin
+  --role=web-deployer --user=web-admin \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 # Create a kubectl context for the user
 kubectl config set-credentials web-admin \

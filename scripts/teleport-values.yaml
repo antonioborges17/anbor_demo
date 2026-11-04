@@ -54,7 +54,7 @@ annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 
-# Nodes are t3a.medium (4 GiB): keep requests modest (applies to auth and proxy)
+# Nodes are t3a.small (2 GiB): keep requests modest (applies to auth and proxy)
 resources:
   requests:
     cpu: 100m
