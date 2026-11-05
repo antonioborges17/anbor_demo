@@ -38,7 +38,7 @@ kubectl create role web-deployer -n web-portal \
 
 # Bind the Role to the user
 kubectl create rolebinding web-portal-deployer -n web-portal \
-  --role=web-deployer --user=web-admin \
+  --role=web-deployer --user=web-admin --group=web-team \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Create a kubectl context for the user
