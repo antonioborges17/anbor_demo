@@ -53,6 +53,9 @@ locals {
     lock_passwd         = true
     ssh_authorized_keys = [trimspace(file(pathexpand(var.web_admin_public_key_path)))]
   }
+
+  # Control plane only. Installs tsh and tctl (the package also includes the unused teleport server).
+  teleport_install_cmd = "curl -fsSL https://cdn.teleport.dev/install.sh | bash -s 18.11.8 oss"
 }
 
 resource "aws_instance" "k8s" {
@@ -73,7 +76,8 @@ resource "aws_instance" "k8s" {
   }
 
   # cloud-init (first boot only): upgrade packages, then prepare the node for kubeadm
-  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/scripts)
+  # (swap off, kernel modules, sysctls, containerd with systemd cgroups, kubelet/kubeadm/kubectl, helm, repo scripts in /home/ubuntu/scripts).
+  # The control plane also gets the Teleport tools (tsh, tctl).
   user_data = <<-EOF
     #cloud-config
     hostname: ${each.value}
@@ -109,7 +113,7 @@ resource "aws_instance" "k8s" {
       - curl -fsSL https://pkgs.k8s.io/core:/stable:/${var.k8s_minor_version}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
       - apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y kubelet kubeadm kubectl && apt-mark hold kubelet kubeadm kubectl
       - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && helm version
-      - git clone --depth 1 --filter=blob:none --sparse ${var.scripts_repo_url} /tmp/repo && git -C /tmp/repo sparse-checkout set --no-cone /scripts/ && cp -r /tmp/repo/scripts /home/ubuntu/scripts && rm -rf /tmp/repo && chown -R ubuntu:ubuntu /home/ubuntu/scripts
+      - git clone --depth 1 --filter=blob:none --sparse ${var.scripts_repo_url} /tmp/repo && git -C /tmp/repo sparse-checkout set --no-cone /scripts/ && cp -r /tmp/repo/scripts /home/ubuntu/scripts && rm -rf /tmp/repo && chown -R ubuntu:ubuntu /home/ubuntu/scripts${each.key == "k8s-ctrl" ? "\n  - ${local.teleport_install_cmd}" : ""}
   EOF
 
   tags = {
