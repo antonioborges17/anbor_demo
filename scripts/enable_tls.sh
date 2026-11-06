@@ -39,7 +39,7 @@ kubectl create role ingress-manager -n web-portal \
   --resource=ingresses.networking.k8s.io
 
 kubectl create rolebinding web-portal-ingress -n web-portal \
-  --role=ingress-manager --user=web-admin
+  --role=ingress-manager --user=web-admin --group=web-team
 
 # Generate Ingress with a TLS certificate (as web-admin)
 kubectl config use-context web-admin-context

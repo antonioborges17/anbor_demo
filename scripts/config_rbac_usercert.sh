@@ -24,22 +24,27 @@ kubectl apply -f web-admin-csr.yaml
 # Approve the CSR and extract the certificate
 kubectl get csr
 kubectl certificate approve web-admin
-kubectl get csr web-admin -o jsonpath='{.status.certificate}' | base64 -d > web-admin.crt
 
-# Create the namespace (enforcing the Pod Security baseline) and a least-privilege Role.
-# Each is piped through apply to tolerate re-runs.
+# The signer issues the certificate asynchronously, so wait for it to appear
+cert=""
+for _ in {1..30}; do
+  cert=$(kubectl get csr web-admin -o jsonpath='{.status.certificate}')
+  [[ -n "$cert" ]] && break
+  sleep 2
+done
+if [[ -z "$cert" ]]; then
+  echo "ERROR: CSR web-admin was approved but no certificate was issued within 60s" >&2
+  kubectl describe csr web-admin >&2
+  exit 1
+fi
+base64 -d <<< "$cert" > web-admin.crt
+
+# Create the namespace (enforcing the Pod Security baseline), piped through apply to tolerate re-runs
 kubectl create namespace web-portal --dry-run=client -o yaml | kubectl apply -f -
 kubectl label namespace web-portal --overwrite pod-security.kubernetes.io/enforce=baseline
 
-kubectl create role web-deployer -n web-portal \
-  --verb=get,list,watch,create,update,patch,delete \
-  --resource=deployments.apps,deployments.apps/scale,replicasets.apps,pods,pods/log,services,configmaps \
-  --dry-run=client -o yaml | kubectl apply -f -
-
-# Bind the Role to the user
-kubectl create rolebinding web-portal-deployer -n web-portal \
-  --role=web-deployer --user=web-admin --group=web-team \
-  --dry-run=client -o yaml | kubectl apply -f -
+# Create the least-privilege Roles and bind them to the user and its group
+kubectl apply -f web-admin-rbac.yaml
 
 # Create a kubectl context for the user
 kubectl config set-credentials web-admin \
@@ -66,7 +71,12 @@ fi
 
 # Verify permissions (still as cluster admin, since --as requires impersonation rights)
 kubectl auth can-i create deployments -n web-portal --as web-admin   # expected: yes
+kubectl auth can-i list events -n web-portal --as web-admin          # expected: yes
 if kubectl auth can-i get nodes --as web-admin; then                 # expected: no
   echo "ERROR: web-admin should not be able to get nodes" >&2
+  exit 1
+fi
+if kubectl auth can-i create pods -n web-portal --as web-admin; then # expected: no
+  echo "ERROR: web-admin should not be able to create Pods directly" >&2
   exit 1
 fi

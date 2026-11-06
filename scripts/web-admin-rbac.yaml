@@ -1,0 +1,86 @@
+# Least-privilege access for web-admin in the web-portal namespace.
+# The Ingress role is granted later by enable_tls.sh.
+
+# Deploy: manage what the user owns. ReplicaSets and Pods are created by the
+# Deployment controller, so the user only reads them (and may delete a stuck Pod).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: web-deployer
+  namespace: web-portal
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments/scale"]
+  verbs: ["get", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get"]
+- apiGroups: [""]
+  resources: ["services", "configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# Monitor: read-only view of events, Service routing and TLS status.
+# Secrets stay excluded. The cert-manager rule takes effect once its CRDs are installed.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: web-monitor
+  namespace: web-portal
+rules:
+- apiGroups: ["", "events.k8s.io"]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates", "certificaterequests"]
+  verbs: ["get", "list", "watch"]
+---
+# The user is named as well as the group because "kubectl auth can-i --as web-admin"
+# impersonates the user without its certificate's O=web-team group.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: web-portal-deployer
+  namespace: web-portal
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: web-deployer
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: web-admin
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: web-team
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: web-portal-monitor
+  namespace: web-portal
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: web-monitor
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: web-admin
+- apiGroup: rbac.authorization.k8s.io
+  kind: Group
+  name: web-team

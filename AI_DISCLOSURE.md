@@ -21,7 +21,7 @@ Files added or changed while writing the guide. AI tool: Claude Code.
 
 | File                                     | AI Involvement | Change                                                  |
 |------------------------------------------|----------------|---------------------------------------------------------|
-| docs/Design_and_Deployment_Guide.docx    |       40%      | Added: some sample commands text and architecture figure|
+| docs/Design_and_Deployment_Guide.docx    |       45%      | Added: some sample commands text and architecture figure. Updated: RBAC sections and corrections to match the scripts |
 
 ## Terraform Configuration
 
@@ -33,8 +33,9 @@ Files added or changed while writing the guide. AI tool: Claude Code.
 
 | File                            | AI Involvement      | Change                                                                      |
 |---------------------------------|---------------------|-----------------------------------------------------------------------------|
-| scripts/config_rbac_usercert.sh |        5%           | Validate syntax and added error checking.                                   |
-| scripts/enable_tls.sh           |       15%           | Added: Timeout/wait logic as certificates are created.                      |
+| scripts/config_rbac_usercert.sh |       25%           | Validate syntax and added error checking. Added: wait for CSR issuance, moved Roles to a manifest, extra permission checks. |
+| scripts/web-admin-rbac.yaml     |      100%           | Added: web-deployer and web-monitor Roles and their RoleBindings.           |
+| scripts/enable_tls.sh           |       15%           | Added: Timeout/wait logic as certificates are created. Bound ingress-manager to the web-team group. |
 | scripts/nginx-deployment.yaml   |       10%           | Added: Implement custom default web page for Nginx.                         |
 | scripts/run_all.sh              |       10%           | Added logic to wait for confirmation that worker nodes have been onboarded. |
 | scripts/web-portal/index.html   |       50%           | Added: Template for custom web page to be used by Nginx.                    | 
